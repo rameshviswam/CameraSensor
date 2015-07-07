@@ -44,7 +44,7 @@ public class TCPServerThread implements Runnable {
                 String newOut = new String(line);
                 Log.e("RV......", newOut);
                 streamOut.writeBytes(newOut);
-                streamOut.flush();
+                streamOut.writeBytes("\r\n");
             }
             catch(IOException ioe)
             {

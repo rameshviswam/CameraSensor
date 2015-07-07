@@ -1,6 +1,7 @@
-/******************************************************************************
-* Create a TCP socket
-******************************************************************************/
+/*
+	Bind socket to port 8888 on localhost
+	*/
+#include<io.h>
 #include<stdio.h>
 #include<winsock2.h>
 
@@ -18,20 +19,22 @@ static int createSocket(SOCKET*s) {
 	return 1;
 }
 
-static int connectToClient(const SOCKET s, const char * addr, const int port) {
-	struct sockaddr_in server;
-	server.sin_addr.s_addr = inet_addr(addr);
+static int bindSocket(SOCKET s, int port) {
+	struct sockaddr_in server, client;
+
+	//Prepare the sockaddr_in structure
 	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons(port);
 
-	//Connect to remote server
-	if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0)
+	//Bind
+	if (bind(s, (struct sockaddr *)&server, sizeof(server)) == SOCKET_ERROR)
 	{
-		puts("connect error");
-		return -11;
+		printf("Bind failed with error code : %d", WSAGetLastError());
+		return -1;
 	}
 
-	puts("Connected");
+	puts("Bind done");
 	return 0;
 }
 
@@ -68,19 +71,31 @@ const int receiveMsg(const SOCKET s, char *buffer, const unsigned int size) {
 	return 0;
 }
 
+
+int acceptConnection(SOCKET s, SOCKET *new_socket) {
+	struct sockaddr_in client;
+	int c = sizeof(struct sockaddr_in);
+	*new_socket = accept(s, (struct sockaddr *)&client, &c);
+	if (*new_socket == INVALID_SOCKET)
+	{
+		printf("accept failed with error code : %d", WSAGetLastError());
+		return -1;
+	}
+
+	puts("Connection accepted");
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	WSADATA wsa;
-	SOCKET s;
-	struct sockaddr_in server;
-	char *message, server_reply[200];
-	int recv_size;
-	int size;
-	char  input_str[2000];
-	int i;
+	SOCKET s, new_socket;
+	char *message;
+	int done = 1;
+	char server_reply[200];
 
 	printf("\nInitialising Winsock...");
-	if (WSAStartup(MAKEWORD(1, 1), &wsa) != 0)
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
 		printf("Failed. Error Code : %d", WSAGetLastError());
 		return 1;
@@ -91,23 +106,26 @@ int main(int argc, char *argv[])
 	// Create Socket
 	createSocket(&s);
 
-	//Establish connection
-	connectToClient(s, "192.168.32.104", 1456);
+	// Bind Socket
+	bindSocket(s, 1456);
 
-	//Send some data
-	message = "This is a test from windows C tcp";
-	sendMsg(s, message);
+	//Listen to incoming connections
+	listen(s, 3);
 
-	//Recieve response from client
-	receiveMsg(s, server_reply, 200);
+	//Accept and incoming connection
+	puts("Waiting for incoming connections...");
 
-	while (scanf("%s", input_str)) {
-		sendMsg(s, input_str);
+	//Accept connection
+	acceptConnection(s, &new_socket);
 
-		//Recieve response from client
-		receiveMsg(s, server_reply, 200);
+	while (done) {
+		receiveMsg(new_socket, server_reply, 200);
+		printf("received from client: %s\n", server_reply);
+		if (!strcmp(server_reply, "bye")){
+			done = 0;
+		}
+		sendMsg(new_socket, server_reply);
 	}
-
 	closesocket(s);
 	WSACleanup();
 

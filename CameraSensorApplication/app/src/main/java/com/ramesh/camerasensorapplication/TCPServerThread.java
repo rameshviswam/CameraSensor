@@ -6,12 +6,18 @@ package com.ramesh.camerasensorapplication;
 import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.DataOutputStream;
 
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 public class TCPServerThread implements Runnable {
     public static final int SERVER_PORT = 1456;
@@ -20,25 +26,132 @@ public class TCPServerThread implements Runnable {
     private Socket socket;
 
     private BufferedReader streamIn;
+    private DataInputStream streamIn_new;
     private DataOutputStream streamOut;
-    //private PrintWriter mWriter;
 
-    @Override
+    private Deque<Byte> receiveBuffer = new ArrayDeque<Byte>(256);
+    private Deque<Byte> sendBuffer = new ArrayDeque<Byte>(256);
+
+    boolean isReceivingPayload = false;
+    int payloadId = 0;
+    int payloadSize = 0;
+
+    public static final int HEADER_SIZE = 4;
+
+    private void sendEchoBack(byte[] buf, int id, int size)  {
+        Byte sendBuf[] = { 'P', 'I', 'N', 'G', ' ', 'A', 'C', 'K'};
+
+        int length = sendBuf.length;
+        for(int i =0; i < sendBuf.length; ++i) {
+            sendBuffer.push(sendBuf[length - i -1]);
+        }
+
+
+
+
+        id = id + 1;
+        byte idByteArr[] = BigInteger.valueOf(id).toByteArray();
+        for(int i = 0; i < 4 - idByteArr.length; ++i) {
+            sendBuffer.push((byte)0);
+        }
+
+
+        for(int i = 0; i < idByteArr.length; ++i) {
+            sendBuffer.push(idByteArr[i]);
+        }
+
+
+
+
+        int len1 = sendBuf.length;
+        byte lengthByteArr[] = BigInteger.valueOf(len1).toByteArray();
+
+        for(int i = 0; i < 4 - lengthByteArr.length; ++i) {
+            sendBuffer.push((byte)0);
+        }
+
+        for(int i = 0; i < lengthByteArr.length; ++i) {
+            sendBuffer.push(lengthByteArr[i]);
+        }
+
+
+
+
+    }
+
+    public void parseReceivedPacket() {
+
+        if(isReceivingPayload == false) {
+            if(receiveBuffer.size() >= 2 * HEADER_SIZE ){
+                byte[] length = new byte[HEADER_SIZE];
+                for(int i=0; i < HEADER_SIZE; i++) {
+                    length[i] = receiveBuffer.pop();
+                }
+                ByteBuffer buffer = ByteBuffer.wrap(length);
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
+                payloadSize = buffer.getInt();
+
+                byte[] length1 = new byte[HEADER_SIZE];
+                for(int i=0; i < HEADER_SIZE; i++) {
+                    length1[i] = receiveBuffer.pop();
+                }
+                ByteBuffer buffer1 = ByteBuffer.wrap(length1);
+                buffer1.order(ByteOrder.LITTLE_ENDIAN);
+                payloadId = buffer1.getInt();
+
+                isReceivingPayload = true;
+            }
+        }
+
+        if(isReceivingPayload == true) {
+            if(receiveBuffer.size() >= payloadSize) {
+                byte[] payload = new byte[payloadSize];
+                for(int i=0; i < payloadSize; i++) {
+                    payload[payloadSize - i -1] = receiveBuffer.pop();
+                }
+                if(payloadId == 1) {
+                    sendEchoBack(payload, payloadId, payloadSize);
+                }
+            }
+            isReceivingPayload = false;
+        }
+    }
+
     public void run() {
         try {
+            boolean done = false;
+
             openSocket();
             openStream();
-            boolean done = false;
-            while (!done) {
+
+            while (done == false) {
+
                 try {
-                    // String line = streamIn.readUTF();
-                    String line = streamIn.readLine();
-                    Log.e("RV........", line);
-                    done = line.equals("bye");
-                    String newOut = new String(line);
-                    Log.e("RV......", newOut);
-                    streamOut.writeBytes(newOut);
-                    streamOut.writeBytes("\r\n");
+                    byte[] line = new byte[256];
+                    int readData = streamIn_new.read(line, 0, 256);
+
+                    if(readData > 0) {
+                        for(int i = 1; i <= readData; ++i) {
+                            receiveBuffer.push(line[readData - i]);
+                        }
+                        Log.e("RV....:", "received data" + readData);
+                    }
+                    //Log.e("RV....", "inside loop");
+                    while(receiveBuffer.isEmpty() == false) {
+                        parseReceivedPacket();
+                    }
+
+                    if(sendBuffer.isEmpty() != true) {
+                        int sendSize = sendBuffer.size();
+                        byte[] sendBuf = new byte[sendSize];
+
+                        for(int i =0; i < sendSize; ++i ){
+                            sendBuf[i]= sendBuffer.pop();
+                        }
+                        streamOut.write(sendBuf, 0, sendSize);
+                        Log.e("RV...", "sent data" + sendSize);
+
+                    }
                 } catch (IOException ioe) {
                     Log.e("RV..EXCEPT.....", ioe.getLocalizedMessage());
                     done = true;
@@ -50,6 +163,7 @@ public class TCPServerThread implements Runnable {
         }
         finally {
             try {
+                closeStream();
                 closeSocket();
             } catch(IOException ioe) {
                 Log.e("RV..EXCEPT.....", ioe.getLocalizedMessage());
@@ -71,6 +185,7 @@ public class TCPServerThread implements Runnable {
         //streamIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
         streamIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         streamOut = new DataOutputStream(socket.getOutputStream());
+        streamIn_new = new DataInputStream(socket.getInputStream());
     }
 
     private void closeSocket() throws IOException {
@@ -81,6 +196,8 @@ public class TCPServerThread implements Runnable {
     private void closeStream() throws IOException {
         if (streamIn != null)
             streamIn.close();
+        if (streamIn_new != null)
+            streamIn_new.close();
 
         if (streamOut != null)
             streamOut.close();

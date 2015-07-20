@@ -14,6 +14,7 @@ TCPClientManager::TCPClientManager(std::string addr = "127.0.0.1", int port = 14
     this->mServerPort = port;
     this->mSocket = INVALID_SOCKET;
     m = new std::mutex();
+    isDataReceived = false;
 }
 
 TCPClientManager::~TCPClientManager(){
@@ -51,6 +52,23 @@ void TCPClientManager::pushDataIntoReceiveQueue(const char * data, const int siz
     }
     m->unlock();
 }
+
+
+int TCPClientManager::getReceiveBufferSize() {
+    return mReceiveQueue.size();
+}
+
+void TCPClientManager::getReceivedData(char * buf, int size) {
+    if (size <= mReceiveQueue.size()) {
+        m->lock();
+        for (int i = 0; i < size; ++i) {
+            buf[i] = mReceiveQueue.front();
+            mReceiveQueue.pop();
+        }
+        m->unlock();
+    }
+}
+
 
 int TCPClientManager::getSendQueueSize()  {
     m->lock();
@@ -179,10 +197,27 @@ bool TCPClientManager::isSocketReadReady(){
     return FALSE;
 }
 
+bool TCPClientManager::checkDataReceivedFlag() {
+    return isDataReceived;
+}
+
+
+void TCPClientManager::resetDataReceivedFlag() {
+    isDataReceived = false;
+}
+
+
 void TCPClientManager::receiveFromServer() {
     int recv_size = 0;
 
     while (1) {
+
+        if (!mReceiveQueue.empty()) {
+            m->lock();
+            isDataReceived = true;
+            m->unlock();
+        }
+
         if (isSocketReadReady()) {
             const int receiveBufLength = 1024;
             char *receiveBuffer = new char[receiveBufLength];
@@ -197,13 +232,15 @@ void TCPClientManager::receiveFromServer() {
                 std::cerr << "recv failed with error: " << WSAGetLastError() << std::endl;
 
             pushDataIntoReceiveQueue(receiveBuffer, recv_size);
+
+
             uint32_t val = 0;
             if (recv_size > 4) {
                 unsigned char test[] = { receiveBuffer[0], receiveBuffer[1], receiveBuffer[2], receiveBuffer[3] };
                 val = *reinterpret_cast<uint32_t *> (test);
-                std::cout << "received size: " <<  val << std::endl;
+                std::cout << "received size: " << val << std::endl;
             }
-                    
+
             free(receiveBuffer);
         }
         std::this_thread::yield();

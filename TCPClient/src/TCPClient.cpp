@@ -9,14 +9,14 @@ int main() {
     unsigned char arr[] = { 'P', 'I', 'N', 'G' };
 
 
-//    cmdMgr.start();
-
+    //    cmdMgr.start();
+   for (int i = 0; i < 20; ++i) {
     cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
-    cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
+}
     //std::cout << "state 1" << std::endl;
 
     while (1) {
-//       cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
+       //cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
     }
     
     std::cout << "state 2" << std::endl;

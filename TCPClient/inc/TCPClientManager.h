@@ -23,6 +23,9 @@ private:
     std::thread *t2;
     std::mutex *m;
 
+    //signals
+    bool isDataReceived;
+
 private:
     //receive queue getters and setters
     void pushDataIntoReceiveQueue(const char * buf, const int size);
@@ -45,10 +48,15 @@ public:
     TCPClientManager(std::string addr, int port);
     //TCPClientManager(TCPClientManager&&);
     ~TCPClientManager();
+
     int start();
+
     void sendData(unsigned char data);
     void sendData(unsigned char *data, int size);
-    std::thread transmitThread();
+    int getReceiveBufferSize();
+    void getReceivedData(char * buf, int size);
+    bool checkDataReceivedFlag();
+    void resetDataReceivedFlag();
 };
 
 #endif  //__TCP_CLIENT_MANAGER_H__

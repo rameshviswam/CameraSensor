@@ -38,33 +38,31 @@ public class TCPServerThread implements Runnable {
 
     public static final int HEADER_SIZE = 4;
 
-    private void sendEchoBack(byte[] buf, int id, int size)  {
-        Byte sendBuf[] = { 'P', 'I', 'N', 'G', ' ', 'A', 'C', 'K'};
+    private void sendEchoBack(int id) {
+        byte[] sendBuf = { 'P', 'I', 'N', 'G', ' ', 'A', 'C', 'K'};
+        sendResponse(sendBuf, id+1, sendBuf.length);
+    }
 
-        int length = sendBuf.length;
+    private void sendSnapshotResponse(int id) {
+        byte[] sendBuf = {1, 2, 3, 4, 5, 6};
+        sendResponse(sendBuf, id+1, sendBuf.length);
+    }
+
+    private void sendResponse(byte[] sendBuf, int id, int length)  {
         for(int i =0; i < sendBuf.length; ++i) {
             sendBuffer.push(sendBuf[length - i -1]);
         }
 
-
-
-
-        id = id + 1;
         byte idByteArr[] = BigInteger.valueOf(id).toByteArray();
         for(int i = 0; i < 4 - idByteArr.length; ++i) {
             sendBuffer.push((byte)0);
         }
 
-
         for(int i = 0; i < idByteArr.length; ++i) {
             sendBuffer.push(idByteArr[i]);
         }
 
-
-
-
-        int len1 = sendBuf.length;
-        byte lengthByteArr[] = BigInteger.valueOf(len1).toByteArray();
+        byte lengthByteArr[] = BigInteger.valueOf(length).toByteArray();
 
         for(int i = 0; i < 4 - lengthByteArr.length; ++i) {
             sendBuffer.push((byte)0);
@@ -73,10 +71,6 @@ public class TCPServerThread implements Runnable {
         for(int i = 0; i < lengthByteArr.length; ++i) {
             sendBuffer.push(lengthByteArr[i]);
         }
-
-
-
-
     }
 
     public void parseReceivedPacket() {
@@ -110,7 +104,10 @@ public class TCPServerThread implements Runnable {
                     payload[payloadSize - i -1] = receiveBuffer.pop();
                 }
                 if(payloadId == 1) {
-                    sendEchoBack(payload, payloadId, payloadSize);
+                    sendEchoBack(payloadId);
+                }
+                else if(payloadId == 3) {
+                    sendSnapshotResponse(payloadId);
                 }
             }
             isReceivingPayload = false;

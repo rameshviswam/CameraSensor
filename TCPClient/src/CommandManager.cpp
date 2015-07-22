@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "CommandManager.h"
 
@@ -14,7 +15,6 @@ CommandManager::~CommandManager() {
     delete(t3);
 }
 
-
 int CommandManager::extractMsgHeader(char *buf, int size) {
     int val = *reinterpret_cast<uint32_t *> (buf);
     return val;
@@ -24,6 +24,23 @@ void CommandManager::receiveThread()
 {
     t3 = new std::thread(&CommandManager::parseReceivedPacket, this);
 }
+
+void processHeartBeatResponse(char * buf, int msgLength) {
+    for (int i = 0; i < msgLength; ++i) {
+        std::cout << buf[i];
+    }
+    std::cout << std::endl;
+}
+
+void processSnapshotResponse(char * buf, int msgLength){
+    std::cout << "RV..." << "SNAPSHOT" << std::endl;
+    std::ofstream outFile;
+    outFile.open("c:\\iWork\\test.bin", std::ios::out);
+    outFile.write(buf, msgLength);
+    outFile.close();
+}
+
+
 void CommandManager::parseReceivedPacket()
 {
 
@@ -48,15 +65,11 @@ void CommandManager::parseReceivedPacket()
                 if (tcpClientMgr->getReceiveBufferSize() >= msgLength){
                     char * buf = new char[msgLength];
                     tcpClientMgr->getReceivedData(buf, msgLength);
-                    if (msgId == 2) {
-                        for (int i = 0; i < msgLength; ++i) {
-                            std::cout << buf[i];
-                        }
-                        std::cout << std::endl;
-
+                    if (msgId == MSGID::HEARTBEAT_ACK) {
+                        processHeartBeatResponse(buf, msgLength);
                     }
-                    else if (msgId == 4) {
-
+                    else if (msgId == MSGID::SNAPSHOT_RESPONSE) {
+                        processSnapshotResponse(buf, msgLength);
                     }
                     isPacketLengthFound = false;
                     delete(buf);
@@ -66,6 +79,21 @@ void CommandManager::parseReceivedPacket()
         }
     }
 
+}
+
+int CommandManager::submitPacket(MSGID id) {
+    unsigned int ID_SIZE = 1;
+    if (id < MSGID::MSG_START || id >= MSGID::MSG_END) {
+        return EXIT_FAILURE;
+    }
+
+    uint32_t packetSize = 0;
+    uint32_t packetId = id;
+
+    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
+    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetId), 4);
+    
+    return EXIT_SUCCESS;
 }
 
 int CommandManager::submitPacket(MSGID id, unsigned char * buffer, int size) {

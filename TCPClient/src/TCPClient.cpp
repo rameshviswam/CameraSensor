@@ -8,33 +8,19 @@ int main() {
     CommandManager cmdMgr;
     unsigned char arr[] = { 'P', 'I', 'N', 'G' };
 
-
-    //    cmdMgr.start();
-   for (int i = 0; i < 20; ++i) {
-    cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
-}
-    //std::cout << "state 1" << std::endl;
-
-    while (1) {
-       //cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
+    for (int i = 0; i < 20; ++i) {
+        cmdMgr.submitPacket(MSGID::SNAPSHOT_REQUEST);
+        cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, 4);
     }
-    
+ 
+    cmdMgr.submitPacket(MSGID::SNAPSHOT_REQUEST);
+ 
+    while (1);
+
     std::cout << "state 2" << std::endl;
     return 0;
 
 
 
-    //TCPClientManager testClient("127.0.0.1", 1456);
-    //unsigned char arr[] = { 'P', 'I', 'N', 'G' };
-
-    //testClient.start();
-
-    //std::cout << "state 1" << std::endl;
-
-    //while (1) {
-    //    testClient.sendData(arr, 4);
-    //}
-
-    //std::cout << "state 2" << std::endl;
 
 }

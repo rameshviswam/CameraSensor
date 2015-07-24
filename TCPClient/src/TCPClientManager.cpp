@@ -219,7 +219,7 @@ void TCPClientManager::receiveFromServer() {
         }
 
         if (isSocketReadReady()) {
-            const int receiveBufLength = 1024;
+            const int receiveBufLength = 1024*16;
             char *receiveBuffer = new char[receiveBufLength];
             memset(receiveBuffer, 0, receiveBufLength);
 

@@ -35,7 +35,7 @@ void processHeartBeatResponse(char * buf, int msgLength) {
 void processSnapshotResponse(char * buf, int msgLength){
     std::cout << "RV..." << "SNAPSHOT" << std::endl;
     std::ofstream outFile;
-    outFile.open("c:\\iWork\\test.bin", std::ios::out);
+    outFile.open("c:\\iWork\\test.jpg", std::ios::binary);
     outFile.write(buf, msgLength);
     outFile.close();
 }

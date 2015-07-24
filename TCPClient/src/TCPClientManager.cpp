@@ -234,13 +234,6 @@ void TCPClientManager::receiveFromServer() {
             pushDataIntoReceiveQueue(receiveBuffer, recv_size);
 
 
-            uint32_t val = 0;
-            if (recv_size > 4) {
-                unsigned char test[] = { receiveBuffer[0], receiveBuffer[1], receiveBuffer[2], receiveBuffer[3] };
-                val = *reinterpret_cast<uint32_t *> (test);
-                std::cout << "received size: " << val << std::endl;
-            }
-
             free(receiveBuffer);
         }
         std::this_thread::yield();

@@ -6,6 +6,7 @@
 //Constructor
 CommandManager::CommandManager()
 :tcpClientMgr(new TCPClientManager("127.0.0.1", 1456)) {
+    //system("adb forward tcp : 1456 tcp : 1456");
     isPacketLengthFound = false;
     tcpClientMgr->start();
     receiveThread();
@@ -33,9 +34,16 @@ void processHeartBeatResponse(char * buf, int msgLength) {
 }
 
 void processSnapshotResponse(char * buf, int msgLength){
+    char * tempBuf = new char[msgLength];
+    
+    for (int i = 0; i < msgLength; ++i) {
+        tempBuf[i] = buf[msgLength - i - 1];
+    }
+
     std::cout << "RV..." << "SNAPSHOT" << std::endl;
     std::ofstream outFile;
-    outFile.open("c:\\iWork\\test.jpg", std::ios::binary);
+    outFile.open("c:\\iWork\\test.dng", std::ios::binary);
+   // outFile.write(tempBuf, msgLength);
     outFile.write(buf, msgLength);
     outFile.close();
 }
@@ -90,9 +98,9 @@ int CommandManager::submitPacket(MSGID id) {
     uint32_t packetSize = 0;
     uint32_t packetId = id;
 
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
     tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetId), 4);
-    
+    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
+
     return EXIT_SUCCESS;
 }
 
@@ -105,9 +113,12 @@ int CommandManager::submitPacket(MSGID id, unsigned char * buffer, int size) {
     uint32_t packetSize = size;
     uint32_t packetId = id;
 
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetId), 4);
+    std::cout << "packetSize: " << packetSize << std::endl;
+    std::cout << "packetId: " << packetId << std::endl;
+
     tcpClientMgr->sendData(buffer, size);
+    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetId), 4);
+    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
 
     return EXIT_SUCCESS;
 }

@@ -8,6 +8,8 @@ using namespace std::chrono;
 // Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
 
+static int imageSize = 0;
+
 TCPClientManager::TCPClientManager(std::string addr = "127.0.0.1", int port = 1456)
 {
     this->mServerAddr = addr;
@@ -219,13 +221,16 @@ void TCPClientManager::receiveFromServer() {
         }
 
         if (isSocketReadReady()) {
-            const int receiveBufLength = 1024*16;
+            const int receiveBufLength = 1024*256*16;
             char *receiveBuffer = new char[receiveBufLength];
             memset(receiveBuffer, 0, receiveBufLength);
 
             recv_size = recv(mSocket, receiveBuffer, receiveBufLength, 0);
-            if (recv_size > 0)
+            if (recv_size > 0) {
                 std::cout << "Bytes received: " << recv_size << std::endl;
+                imageSize += recv_size;
+                std::cout << "Total size received: " << imageSize << std::endl;
+            }
             else if (recv_size == 0)
                 std::cerr << "Connection closed\n" << std::endl;
             else

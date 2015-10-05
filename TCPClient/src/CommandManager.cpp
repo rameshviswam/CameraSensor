@@ -34,24 +34,22 @@ void processHeartBeatResponse(char * buf, int msgLength) {
 }
 
 void processSnapshotResponse(char * buf, int msgLength){
-    char * tempBuf = new char[msgLength];
-    
-    for (int i = 0; i < msgLength; ++i) {
-        tempBuf[i] = buf[msgLength - i - 1];
-    }
-
-    std::cout << "RV..." << "SNAPSHOT" << std::endl;
+    std::cout << "RV..." << "\n ....Finishing Snapshot" << std::endl;
     std::ofstream outFile;
-    outFile.open("c:\\iWork\\test.dng", std::ios::binary);
-   // outFile.write(tempBuf, msgLength);
+    srand((unsigned int)time(NULL));
+    int x = rand() % 50 + 1;
+    std::string rand = std::to_string(x);
+    std::string root = "c:\\iWork\\test";
+    std::string ext = ".raw";
+    std::string name = root.append(rand).append(ext);
+    std::cout << "\n" << name << std::endl;
+    outFile.open(name, std::ios::binary);
     outFile.write(buf, msgLength);
     outFile.close();
 }
 
-
 void CommandManager::parseReceivedPacket()
 {
-
     while (1) {
         if (tcpClientMgr->checkDataReceivedFlag()) {
             if (isPacketLengthFound == false) {
@@ -98,13 +96,13 @@ int CommandManager::submitPacket(MSGID id) {
     uint32_t packetSize = 0;
     uint32_t packetId = id;
 
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetId), 4);
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
+    tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetId), 4);
+    tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetSize), 4);
 
     return EXIT_SUCCESS;
 }
 
-int CommandManager::submitPacket(MSGID id, unsigned char * buffer, int size) {
+int CommandManager::submitPacket(MSGID id, const char * buffer, size_t size) {
     unsigned int ID_SIZE = 1;
     if (id < MSGID::MSG_START || id >= MSGID::MSG_END) {
         return EXIT_FAILURE;
@@ -117,8 +115,8 @@ int CommandManager::submitPacket(MSGID id, unsigned char * buffer, int size) {
     std::cout << "packetId: " << packetId << std::endl;
 
     tcpClientMgr->sendData(buffer, size);
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetId), 4);
-    tcpClientMgr->sendData(reinterpret_cast<unsigned char *> (&packetSize), 4);
+    tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetId), 4);
+    tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetSize), 4);
 
     return EXIT_SUCCESS;
 }

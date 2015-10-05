@@ -22,7 +22,7 @@ public:
     CommandManager();
     ~CommandManager();
 
-    int submitPacket(MSGID id, unsigned char * buffer, int size);
+    int submitPacket(MSGID id, const char * buffer, size_t size);
     int submitPacket(MSGID id);
     void parseReceivedPacket();
 };

@@ -32,17 +32,14 @@ TCPClientManager::~TCPClientManager(){
     delete(t2);
 }
 
-void TCPClientManager::sendData(unsigned char data) {
+void TCPClientManager::sendData(const char * data, int size) {
     m->lock();
-    mSendQueue.push(data);
-    m->unlock();
-}
 
-void TCPClientManager::sendData(unsigned char * data, int size) {
-    m->lock();
-    for (int i = 0; i < size; ++i) {
-        mSendQueue.push(data[i]);
-    }
+    send(mSocket, data, size, 0);
+
+    //for (int i = 0; i < size; ++i) {
+    //    mSendQueue.push(data[i]);
+    //}
     m->unlock();
 }
 
@@ -50,7 +47,8 @@ void TCPClientManager::sendData(unsigned char * data, int size) {
 void TCPClientManager::pushDataIntoReceiveQueue(const char * data, const int size) {
     m->lock();
     for (int i = 0; i < size; ++i) {
-        mReceiveQueue.push(data[i]);
+        //mReceiveQueue.push(data[i]);
+        mReceiveQueue.push_back(data[i]);
     }
     m->unlock();
 }
@@ -63,14 +61,11 @@ int TCPClientManager::getReceiveBufferSize() {
 void TCPClientManager::getReceivedData(char * buf, int size) {
     if (size <= mReceiveQueue.size()) {
         m->lock();
-        for (int i = 0; i < size; ++i) {
-            buf[i] = mReceiveQueue.front();
-            mReceiveQueue.pop();
-        }
+        std::copy(mReceiveQueue.begin(), mReceiveQueue.begin() + size, buf);
+        mReceiveQueue.erase(mReceiveQueue.begin(), mReceiveQueue.begin() + size);
         m->unlock();
     }
 }
-
 
 int TCPClientManager::getSendQueueSize()  {
     m->lock();
@@ -168,7 +163,7 @@ void TCPClientManager::sendToServer() {
             getDataFromSendQueue(sendBuffer, queueSize);
 
             std::cout << "sending to server with payload size: " << queueSize << std::endl;
-
+            /*
             iResult = send(mSocket, sendBuffer, (int)queueSize, 0);
             if (SOCKET_ERROR == iResult) {
                 closesocket(mSocket);
@@ -176,7 +171,7 @@ void TCPClientManager::sendToServer() {
                 WSACleanup();
             }
             std::cout << "sent data size: " << iResult << std::endl;
-
+*/
             free(sendBuffer);
         }
         //std::this_thread::sleep_until(system_clock::now() + seconds(1));
@@ -203,11 +198,9 @@ bool TCPClientManager::checkDataReceivedFlag() {
     return isDataReceived;
 }
 
-
 void TCPClientManager::resetDataReceivedFlag() {
     isDataReceived = false;
 }
-
 
 void TCPClientManager::receiveFromServer() {
     int recv_size = 0;
@@ -221,23 +214,21 @@ void TCPClientManager::receiveFromServer() {
         }
 
         if (isSocketReadReady()) {
-            const int receiveBufLength = 1024*256*16;
+            const int receiveBufLength = 1024 * 16 * 16;
             char *receiveBuffer = new char[receiveBufLength];
             memset(receiveBuffer, 0, receiveBufLength);
 
+
             recv_size = recv(mSocket, receiveBuffer, receiveBufLength, 0);
             if (recv_size > 0) {
-                std::cout << "Bytes received: " << recv_size << std::endl;
-                imageSize += recv_size;
-                std::cout << "Total size received: " << imageSize << std::endl;
+                    std::cout << "#";
             }
             else if (recv_size == 0)
                 std::cerr << "Connection closed\n" << std::endl;
             else
                 std::cerr << "recv failed with error: " << WSAGetLastError() << std::endl;
 
-            pushDataIntoReceiveQueue(receiveBuffer, recv_size);
-
+            mReceiveQueue.insert(mReceiveQueue.end(), &receiveBuffer[0], &receiveBuffer[recv_size]);
 
             free(receiveBuffer);
         }

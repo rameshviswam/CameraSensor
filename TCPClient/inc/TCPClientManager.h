@@ -11,7 +11,8 @@ class TCPClientManager {
 private:
     // packet queue data structures
     std::queue<char> mSendQueue;
-    std::queue<char> mReceiveQueue;
+    //std::queue<char> mReceiveQueue;
+   std::vector<char> mReceiveQueue;
 
     // socket member variables
     std::string mServerAddr;
@@ -51,8 +52,7 @@ public:
 
     int start();
 
-    void sendData(unsigned char data);
-    void sendData(unsigned char *data, int size);
+    void sendData(const char *data, int size);
     int getReceiveBufferSize();
     void getReceivedData(char * buf, int size);
     bool checkDataReceivedFlag();

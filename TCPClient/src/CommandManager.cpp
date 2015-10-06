@@ -102,8 +102,11 @@ int CommandManager::submitPacket(MSGID id) {
     return EXIT_SUCCESS;
 }
 
-int CommandManager::submitPacket(MSGID id, const char * buffer, size_t size) {
+int CommandManager::submitPacket(MSGID id, const const char * buffer, size_t size) {
     unsigned int ID_SIZE = 1;
+    char * packet = new char[size + 8];
+    char tempbuf[4];
+
     if (id < MSGID::MSG_START || id >= MSGID::MSG_END) {
         return EXIT_FAILURE;
     }
@@ -111,12 +114,32 @@ int CommandManager::submitPacket(MSGID id, const char * buffer, size_t size) {
     uint32_t packetSize = size;
     uint32_t packetId = id;
 
-    std::cout << "packetSize: " << packetSize << std::endl;
-    std::cout << "packetId: " << packetId << std::endl;
+    memcpy(packet, buffer, size);
 
-    tcpClientMgr->sendData(buffer, size);
-    tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetId), 4);
-    tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetSize), 4);
+    for (int i = 0; i < 4; i++) {
+        tempbuf[i] = (id >> (i * 8));
+    }
+
+    memcpy(packet + size, tempbuf, 4);
+
+    for (int i = 0; i < 4; i++) {
+        tempbuf[i] = (size >> (i * 8));
+    }
+
+    memcpy(packet + size + 4, tempbuf, 4);
+
+
+    tcpClientMgr->sendData(packet, size + 8);
+    //tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetId), 4);
+    //tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetSize), 4);
+
+
+    for (int i = 0; i < size + 8; ++i) {
+        printf("%i  ", packet[i]);
+    }
+    printf("\n");
+
+    delete[] packet;
 
     return EXIT_SUCCESS;
 }

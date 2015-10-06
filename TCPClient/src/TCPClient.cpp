@@ -22,12 +22,41 @@ void little_sleep(std::chrono::microseconds us)
 
 int main() {
     CommandManager cmdMgr;
-    char arr[] = { 'P', 'I', 'N', 'G' };
+    char arr[] = { 'P', 'I', 'N', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'G', '\0' };
+
     int userChoice = 0;
     int sensitivity = 0;
     float focusDistance = 0.0f;
     long exposureTime = 0;
     long frameDuration;
+    int cameraMode;
+
+    int test = 10;
+
+    /*
+    while (test)
+    {
+        char buf[150];
+
+        cameraMode = 1;
+        sensitivity = 1;
+        focusDistance = 1.0f;
+        exposureTime = 0;
+        frameDuration = 0;
+        
+        test--;
+
+        sprintf(buf, "CAMERA_MODE:%d;EXPOSURE_GAIN:%d;EXPOSURE_TIME:%ld;FOCUS_DISTANCE:%f;FRAME_DURATION:%ld",
+            cameraMode, sensitivity, exposureTime, focusDistance, frameDuration);
+        std::cout << "input string: " << buf << std::endl;
+        cmdMgr.submitPacket(MSGID::SNAPSHOT_REQUEST, buf, strlen(buf));
+
+        Sleep(10000);
+    }
+
+
+    */
+
     while (1) {
         std::cout << std::fflush;
         std::cout << "-----------------------------" << std::endl;
@@ -37,11 +66,14 @@ int main() {
         std::cin >> userChoice;
 
         if (userChoice == 1) {
-            cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, (size_t)4);
+            cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, (size_t) strlen(arr));
 
         }
         else if (userChoice == 2) {
             char buf[150];
+
+            std::cout << "Enter Manual(0) or Auto(1): ";
+            std::cin >> cameraMode;
 
             std::cout << "Enter exposure gain: ";
             std::cin >> sensitivity;
@@ -56,7 +88,8 @@ int main() {
             std::cin >> frameDuration;
 
 
-            sprintf(buf, "EXPOSURE_GAIN:%d;EXPOSURE_TIME:%ld;FOCUS_DISTANCE:%f;FRAME_DURATION:%ld", sensitivity, exposureTime, focusDistance, frameDuration);
+            sprintf(buf, "CAMERA_MODE:%d;EXPOSURE_GAIN:%d;EXPOSURE_TIME:%ld;FOCUS_DISTANCE:%f;FRAME_DURATION:%ld", 
+                    cameraMode, sensitivity, exposureTime, focusDistance, frameDuration);
             std::cout << "input string: " << buf << std::endl;
             cmdMgr.submitPacket(MSGID::SNAPSHOT_REQUEST, buf, strlen(buf));
         }

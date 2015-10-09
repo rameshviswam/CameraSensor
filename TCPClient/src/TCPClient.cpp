@@ -31,9 +31,8 @@ int main() {
     long frameDuration;
     int cameraMode;
 
-    int test = 10;
-
-    /*
+    int test = 0;
+    
     while (test)
     {
         char buf[150];
@@ -48,14 +47,12 @@ int main() {
 
         sprintf(buf, "CAMERA_MODE:%d;EXPOSURE_GAIN:%d;EXPOSURE_TIME:%ld;FOCUS_DISTANCE:%f;FRAME_DURATION:%ld",
             cameraMode, sensitivity, exposureTime, focusDistance, frameDuration);
-        std::cout << "input string: " << buf << std::endl;
-        cmdMgr.submitPacket(MSGID::SNAPSHOT_REQUEST, buf, strlen(buf));
+        //std::cout << "input string: " << buf << std::endl;
+        //cmdMgr.submitPacket(MSGID::SNAPSHOT_REQUEST, buf, strlen(buf));
+        cmdMgr.submitPacket(MSGID::HEARTBEAT_REQ, arr, (size_t)strlen(arr));
 
-        Sleep(10000);
+    //    Sleep(10000);
     }
-
-
-    */
 
     while (1) {
         std::cout << std::fflush;
@@ -86,7 +83,6 @@ int main() {
 
             std::cout << "Enter frame Duration: ";
             std::cin >> frameDuration;
-
 
             sprintf(buf, "CAMERA_MODE:%d;EXPOSURE_GAIN:%d;EXPOSURE_TIME:%ld;FOCUS_DISTANCE:%f;FRAME_DURATION:%ld", 
                     cameraMode, sensitivity, exposureTime, focusDistance, frameDuration);

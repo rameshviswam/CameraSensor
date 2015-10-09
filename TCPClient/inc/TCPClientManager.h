@@ -10,9 +10,7 @@
 class TCPClientManager {
 private:
     // packet queue data structures
-    std::queue<char> mSendQueue;
-    //std::queue<char> mReceiveQueue;
-   std::vector<char> mReceiveQueue;
+   std::vector<char> mReceivedBuffer;
 
     // socket member variables
     std::string mServerAddr;
@@ -31,10 +29,6 @@ private:
     //receive queue getters and setters
     void pushDataIntoReceiveQueue(const char * buf, const int size);
 
-    //send queue
-    int getSendQueueSize();
-    void getDataFromSendQueue(char * sendBuffer, int size);
-
     //socket methods
     int initializeSocket() const;
     int createSocket();
@@ -47,7 +41,6 @@ private:
 
 public:
     TCPClientManager(std::string addr, int port);
-    //TCPClientManager(TCPClientManager&&);
     ~TCPClientManager();
 
     int start();

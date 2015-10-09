@@ -37,9 +37,6 @@ void TCPClientManager::sendData(const char * data, int size) {
 
     send(mSocket, data, size, 0);
 
-    //for (int i = 0; i < size; ++i) {
-    //    mSendQueue.push(data[i]);
-    //}
     m->unlock();
 }
 
@@ -47,45 +44,22 @@ void TCPClientManager::sendData(const char * data, int size) {
 void TCPClientManager::pushDataIntoReceiveQueue(const char * data, const int size) {
     m->lock();
     for (int i = 0; i < size; ++i) {
-        //mReceiveQueue.push(data[i]);
-        mReceiveQueue.push_back(data[i]);
+        mReceivedBuffer.push_back(data[i]);
     }
     m->unlock();
 }
 
-
 int TCPClientManager::getReceiveBufferSize() {
-    return mReceiveQueue.size();
+    return mReceivedBuffer.size();
 }
 
 void TCPClientManager::getReceivedData(char * buf, int size) {
-    if (size <= mReceiveQueue.size()) {
+    if (size <= mReceivedBuffer.size()) {
         m->lock();
-        std::copy(mReceiveQueue.begin(), mReceiveQueue.begin() + size, buf);
-        mReceiveQueue.erase(mReceiveQueue.begin(), mReceiveQueue.begin() + size);
+        std::copy(mReceivedBuffer.begin(), mReceivedBuffer.begin() + size, buf);
+        mReceivedBuffer.erase(mReceivedBuffer.begin(), mReceivedBuffer.begin() + size);
         m->unlock();
     }
-}
-
-int TCPClientManager::getSendQueueSize()  {
-    m->lock();
-    int size = mSendQueue.size();
-    m->unlock();
-    return size;
-}
-
-void TCPClientManager::getDataFromSendQueue(char * sendBuffer, int size) {
-    m->lock();
-    int i = 0;
-
-    while (size > 0){
-        sendBuffer[i] = mSendQueue.front();
-        mSendQueue.pop();
-        i++;
-        size--;
-    }
-
-    m->unlock();
 }
 
 // Socket private methods
@@ -150,35 +124,6 @@ int TCPClientManager::connectToServer() {
     return EXIT_SUCCESS;
 }
 
-void TCPClientManager::sendToServer() {
-    int sentSize = 0;
-    int iResult = 0;
-
-    std::cout << "send thread" << std::endl;
-
-    while (1) {
-        int queueSize = getSendQueueSize();
-        if (queueSize) {
-            char * sendBuffer = new char[queueSize];
-            getDataFromSendQueue(sendBuffer, queueSize);
-
-            std::cout << "sending to server with payload size: " << queueSize << std::endl;
-            /*
-            iResult = send(mSocket, sendBuffer, (int)queueSize, 0);
-            if (SOCKET_ERROR == iResult) {
-                closesocket(mSocket);
-                std::cerr << "Data send failed with error: " << WSAGetLastError() << std::endl;
-                WSACleanup();
-            }
-            std::cout << "sent data size: " << iResult << std::endl;
-*/
-            free(sendBuffer);
-        }
-        //std::this_thread::sleep_until(system_clock::now() + seconds(1));
-        std::this_thread::yield();
-    }
-}
-
 bool TCPClientManager::isSocketReadReady(){
     fd_set readSockSet;
     struct timeval timeout;
@@ -207,7 +152,7 @@ void TCPClientManager::receiveFromServer() {
 
     while (1) {
 
-        if (!mReceiveQueue.empty()) {
+        if (!mReceivedBuffer.empty()) {
             m->lock();
             isDataReceived = true;
             m->unlock();
@@ -221,14 +166,14 @@ void TCPClientManager::receiveFromServer() {
 
             recv_size = recv(mSocket, receiveBuffer, receiveBufLength, 0);
             if (recv_size > 0) {
-                    std::cout << "#";
+                std::cout << "#";
             }
             else if (recv_size == 0)
                 std::cerr << "Connection closed\n" << std::endl;
             else
                 std::cerr << "recv failed with error: " << WSAGetLastError() << std::endl;
 
-            mReceiveQueue.insert(mReceiveQueue.end(), &receiveBuffer[0], &receiveBuffer[recv_size]);
+            mReceivedBuffer.insert(mReceivedBuffer.end(), &receiveBuffer[0], &receiveBuffer[recv_size]);
 
             free(receiveBuffer);
         }
@@ -255,7 +200,6 @@ int TCPClientManager::start() {
     }
 
     t1 = new std::thread(&TCPClientManager::receiveFromServer, this);
-    t2 = new std::thread(&TCPClientManager::sendToServer, this);
 
     return EXIT_SUCCESS;
 }

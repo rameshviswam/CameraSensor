@@ -10,6 +10,4 @@ enum MSGID{
     MSG_END
 };
 
-
-
 #endif  //__MESSAGE_H__

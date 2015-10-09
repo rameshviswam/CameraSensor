@@ -128,13 +128,10 @@ int CommandManager::submitPacket(MSGID id, const const char * buffer, size_t siz
 
     memcpy(packet + size + 4, tempbuf, 4);
 
-
     tcpClientMgr->sendData(packet, size + 8);
-    //tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetId), 4);
-    //tcpClientMgr->sendData(reinterpret_cast<const char *> (&packetSize), 4);
 
 
-    for (int i = 0; i < size + 8; ++i) {
+    for (unsigned int i = 0; i < size + 8; ++i) {
         printf("%i  ", packet[i]);
     }
     printf("\n");
